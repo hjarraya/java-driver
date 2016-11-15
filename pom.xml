@@ -74,6 +74,8 @@
         <test.groups>unit</test.groups>
         <!-- Set default javadoc.opts, overriden by profiles -->
         <javadoc.opts />
+        <shade-plugin.version>2.4.3</shade-plugin.version>
+        <shade.base>com.github.cassandra.jdbc.internal</shade.base>
     </properties>
 
     <profiles>
@@ -408,6 +410,120 @@
                         </property>
                     </properties>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${shade-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createSourcesJar>true</createSourcesJar>
+                            <shadeSourcesContent>false</shadeSourcesContent>
+                            <dependencyReducedPomLocation>${project.build.directory}/pom.xml
+                            </dependencyReducedPomLocation>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>shaded</shadedClassifierName>
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.yaml.snakeyaml</pattern>
+                                    <shadedPattern>${shade.base}.snakeyaml</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.antlr</pattern>
+                                    <shadedPattern>${shade.base}.antlr</shadedPattern>
+                                </relocation>
+                                <!-- sigh... jamm is required by cassandra -->
+                                <relocation>
+                                    <pattern>org.github.jamm</pattern>
+                                    <shadedPattern>${shade.base}.jamm</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.apache.cassandra</pattern>
+                                    <shadedPattern>${shade.base}.cassandra</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.datastax</pattern>
+                                    <shadedPattern>${shade.base}.datastax</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google</pattern>
+                                    <shadedPattern>${shade.base}.google</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.codahale.metrics</pattern>
+                                    <shadedPattern>${shade.base}.metrics</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>net.sf.jsqlparser</pattern>
+                                    <shadedPattern>${shade.base}.jsqlparser</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.joda</pattern>
+                                    <shadedPattern>${shade.base}.joda</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.pmw.tinylog</pattern>
+                                    <shadedPattern>${shade.base}.tinylog</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.xerial.snappy</pattern>
+                                    <shadedPattern>${shade.base}.snappy</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>net.jpountz</pattern>
+                                    <shadedPattern>${shade.base}.lz4</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.slf4j</pattern>
+                                    <shadedPattern>${shade.base}.slf4j</shadedPattern>
+                                </relocation>
+                                <!-- Better to keep Netty as is according to:
+                                https://github.com/datastax/java-driver/blob/3.0/driver-core/src/main/java/com/datastax/driver/core/NettyUtil.java#L53
+                                -->
+                                <relocation>
+                                    <pattern>io.netty</pattern>
+                                    <shadedPattern>${shade.base}.datastax.shaded.netty</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer"/>
+                            </transformers>
+                            <filters>
+                                <!-- we only need the parser its dependencies
+                                https://github.com/apache/cassandra/blob/cassandra-3.5/src/java/org/apache/cassandra/cql3/Cql.g
+                                -->
+                                <filter>
+                                    <artifact>org.apache.cassandra:cassandra-all</artifact>
+                                    <includes>
+                                        <include>org/apache/cassandra/auth/**</include>
+                                        <include>org/apache/cassandra/cache/*</include>
+                                        <include>org/apache/cassandra/config/*</include>
+                                        <include>org/apache/cassandra/cql3/**</include>
+                                        <include>org/apache/cassandra/db/marshal/*</include>
+                                        <include>org/apache/cassandra/exceptions/*</include>
+                                        <include>org/apache/cassandra/io/util/*</include>
+                                        <include>org/apache/cassandra/serializers/*</include>
+                                        <include>org/apache/cassandra/transport/*</include>
+                                        <include>org/apache/cassandra/utils/*</include>
+                                    </includes>
+                                </filter>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>META-INF/*.xml</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
